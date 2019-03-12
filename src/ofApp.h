@@ -22,6 +22,7 @@ public:
     int camWidth;  // try to grab at this size.
     int camHeight;
     ofTexture tex;
+    ofPixels pix;
     ofImage texImg;
     ofFbo fbo;
     
