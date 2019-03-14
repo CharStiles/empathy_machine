@@ -112,16 +112,16 @@ void ofApp::draw() {
     ofSetColor(255,255);
     texImg.draw(0,0);
     
-    //ofSetColor(255,255,255,90);
-    //contourFinder.draw();
+    ofSetColor(255,255,255,90);
+    contourFinder.draw();
 //
-    for (int j = 0; j < contourFinder.size(); j++) {
-        ofPolyline ithPolyline = contourFinder.getPolyline(j);
-        ofPolyline resampled = ithPolyline.getResampledBySpacing(10.0);
-        ofPolyline resampledSmoothed = resampled.getSmoothed(9);
-        //ofSetColor(255,255,0,50);
-        resampledSmoothed.draw();
-    }
+//    for (int j = 0; j < contourFinder.size(); j++) {
+//        ofPolyline ithPolyline = contourFinder.getPolyline(j);
+//        ofPolyline resampled = ithPolyline.getResampledBySpacing(10.0);
+//        ofPolyline resampledSmoothed = resampled.getSmoothed(9);
+//        //ofSetColor(255,255,0,50);
+//        resampledSmoothed.draw();
+//    }
 
 
 
