@@ -1,4 +1,5 @@
 ofxCv
+ofxGStreamer
 ofxGui
 ofxKinect
 ofxOpenCv

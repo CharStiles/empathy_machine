@@ -20,11 +20,21 @@ void ofApp::setup() {
     ringTex.allocate(camWidth, camHeight, OF_PIXELS_RGB);
     tex.allocate(camWidth, camHeight, OF_PIXELS_RGB);
     fbo.allocate(camWidth,camHeight,GL_RGBA);
+    camImg.allocate(camWidth,camHeight,OF_IMAGE_COLOR);
+    
     ringImg.allocate(camWidth, camHeight,OF_IMAGE_COLOR);
     texImg.allocate(camWidth, camHeight,OF_IMAGE_COLOR);
 
    // faceFinder.setup("haarcascade_frontalface_default.xml");
    // faceFinder.setPreset(ObjectFinder::Fast);
+    
+    //////////////////////////////////////////////////////// ETHERNET CAMERA STUFF
+    
+    gstv.allocate(camWidth, camHeight, OF_PIXELS_RGB);
+    gstv.setPipeline("rtspsrc location=rtsp://admin:@192.168.8.192:554/live0.264;stream=0;user=system;pass=system; width=341, height=251,framerate=15/1 gop-size=1 bitrate=200 drop-on-latency=true  latency=1 ! queue2 max-size-buffers=2 ! decodebin ! videoconvert ! videoscale", OF_PIXELS_RGB, true, camWidth, camHeight);
+    gstv.startPipeline();
+    gstv.play();
+
 
     
     //////////////////////////////////KINECT STUFF
@@ -78,13 +88,15 @@ void ofApp::setup() {
     // an object can move up to 32 pixels per frame
     contourFinderFull.getTracker().setMaximumDistance(32);
     //END CONTOUR
-    
-    cam.setDeviceID(dID);
-    cam.initGrabber(camWidth, camHeight);
+//
+//    cam.setDeviceID(dID);
+//    cam.initGrabber(camWidth, camHeight);
+
+    camPix.allocate(camWidth, camHeight, 3);
 	// imitate() will set up previous and diff
 	// so they have the same size and type as cam
-	imitate(previous, cam);
-	imitate(diff, cam);
+	imitate(previous, camPix);
+	imitate(diff, camPix);
     
     // START SYPHION
     mainOutputSyphonServer.setName("Screen Output");
@@ -104,16 +116,21 @@ void ofApp::update() {
 //        grayImage.setFromPixels(kinect.getDepthPixels());
 //        grayImage.flagImageChanged();
 //    }
-	cam.update();
-	if(cam.isFrameNew()) {
+    
+    gstv.update();
+    if(gstv.isFrameNew()){
+        camPix = gstv.getPixels();
+//    }
+//    cam.update();
+//    if(cam.isFrameNew()) {
         temp1 =(float)((camHeight)/2);
         //faceFinder.update(cam);
 		// take the absolute difference of prev and cam and save it inside diff
-		absdiff(cam, previous, diff);
+		absdiff(camPix, previous, diff);
 		diff.update();
 		
 		// like ofSetPixels, but more concise and cross-toolkit
-		copy(cam, previous);
+		copy(camPix, previous);
 		
 		// mean() returns a Scalar. it's a cv:: function so we have to pass a Mat
 		diffMean = mean(toCv(diff));
@@ -178,6 +195,7 @@ void ofApp::update() {
     ringImg.setFromPixels(ringPixels);// TODO init this
     texImg.setFromPixels(diff);
     tex.loadData(pixels); // diff feed
+    camImg.setFromPixels(gstv.getPixels());
     contourFinder.findContours(ringImg);
     contourFinderFull.findContours(texImg);
 	}
@@ -225,7 +243,7 @@ void ofApp::draw() {
     ofSetColor(255);
     contourFinder.draw();
     fbo.draw(0, camHeight/2);
-    cam.draw(camWidth, camHeight/2);
+    camImg.draw(camWidth, camHeight/2);
     //grayImage.draw(10, 320, 400, 300);
     //tex.draw(0,camHeight/2);
     mClient.draw(50, 50);

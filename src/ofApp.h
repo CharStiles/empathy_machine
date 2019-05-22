@@ -5,6 +5,8 @@
 #include "ofxOpenCv.h"
 #include "ofxSyphon.h"
 #include "ofxKinect.h"
+#include "ofGstVideoPlayer.h"
+#include "ofGstUtils.h"
 
 class ofApp : public ofBaseApp {
 public:
@@ -15,6 +17,8 @@ public:
 	
 	ofVideoGrabber cam;
 	ofPixels previous;
+    ofPixels camPix;
+    ofImage camImg;
 	ofImage diff;
 	
 	// a scalar is like an ofVec4f but normally used for storing color information
@@ -62,5 +66,7 @@ public:
     float intensity;
     ofxSyphonClient mClient;
     ofColor red;
+    
+    ofGstVideoUtils gstv;
     
 };
