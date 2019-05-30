@@ -1,6 +1,9 @@
+ofxCcv
 ofxCv
 ofxGStreamer
+ofxGrt
 ofxGui
 ofxKinect
 ofxOpenCv
+ofxOsc
 ofxSyphon
