@@ -60,6 +60,7 @@ void ofApp::setup() {
     
     gstv.allocate(camWidth, camHeight, OF_PIXELS_RGB);
     gstv.setPipeline("rtspsrc location=rtsp://admin:@192.168.8.192:554/live0.264;stream=0;user=system;pass=system; width=341, height=251,framerate=15/1 gop-size=1 bitrate=200 drop-on-latency=true  latency=1 ! queue2 max-size-buffers=2 ! decodebin ! videoconvert ! videoscale", OF_PIXELS_RGB, true, camWidth, camHeight);
+    //TODO: Speed this up
     gstv.startPipeline();
     gstv.play();
 
@@ -156,7 +157,7 @@ void ofApp::setup() {
     tPredict = false;
     
     guiSliders.setup();
-    guiSliders.setPosition(10,gui.getHeight()+25);
+    guiSliders.setPosition(camWidth,gui.getHeight()+25);
     guiSliders.setName("Sliders");
     guiSliders.add(bAddSlider.setup("Add Slider"));
     addSlider();
