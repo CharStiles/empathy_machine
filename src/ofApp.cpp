@@ -5,7 +5,6 @@ using namespace cv;
 
 /////machine learning shit
 
-
 //--------------------------------------------------------------
 void GestureRecognitionPipelineThreaded::startTraining(RegressionData *trainingData) {
     this->trainingData = trainingData;
@@ -33,6 +32,8 @@ void ofApp::setup() {
     camWidth = 640;  // try to grab at this size.
     camHeight = 480;
     red = ofColor(255,0,0,255);
+    ofLogVerbose();
+    
 	//vofSetVerticalSync(true);
     //ofBackground(0);
     ofSetBackgroundAuto(false);
@@ -61,10 +62,10 @@ void ofApp::setup() {
     gstv.allocate(camWidth, camHeight, OF_PIXELS_RGB);
     gstv.setPipeline("rtspsrc location=rtsp://admin:@192.168.8.192:554/live0.264;stream=0;user=system;pass=system; width=341, height=251,framerate=15/1 gop-size=1 bitrate=200 drop-on-latency=true  latency=1 ! queue2 max-size-buffers=2 ! decodebin ! videoconvert ! videoscale", OF_PIXELS_RGB, true, camWidth, camHeight);
     //TODO: Speed this up
+    
     gstv.startPipeline();
     gstv.play();
 
-    
     /// CONTOUR
     contourFinder.setMinAreaRadius(1);
     contourFinder.setMaxAreaRadius(100);
@@ -84,7 +85,7 @@ void ofApp::setup() {
     // an object can move up to 32 pixels per frame
     contourFinderFull.getTracker().setMaximumDistance(32);
     //END CONTOUR
-//
+
 //    cam.setDeviceID(dID);
 //    cam.initGrabber(camWidth, camHeight);
 
@@ -114,7 +115,6 @@ void ofApp::setup() {
     oscDestination = DEFAULT_OSC_DESTINATION;
     oscAddress = DEFAULT_OSC_ADDRESS;
     oscPort = DEFAULT_OSC_PORT;
-    
     
     // ccv
     ccv.setup(ccvPath);
@@ -268,7 +268,7 @@ void ofApp::update() {
             isTraining = false;
            // ofBackground(150);
         } else if (ofGetFrameNum() % 15 == 0) {
-            gui.setBackgroundColor(ofColor(ofRandom(255),ofRandom(255),ofRandom(255)));
+            gui.setTextColor(ofColor(ofRandom(255),ofRandom(255),ofRandom(255)));
         }
     }
     else if (tPredict) {
@@ -283,9 +283,7 @@ void ofApp::update() {
             
             ccv.update(gstv, ccv.numLayers()-1);
         }
-//    }
-//    cam.update();
-//    if(cam.isFrameNew()) {
+
         temp1 =(float)((camHeight)/2);
         //faceFinder.update(cam);
 		// take the absolute difference of prev and cam and save it inside diff
@@ -298,7 +296,6 @@ void ofApp::update() {
 		// mean() returns a Scalar. it's a cv:: function so we have to pass a Mat
 		diffMean = mean(toCv(diff));
 		
-        
 		// you can only do math between Scalars,
 		// but it's easy to make a Scalar from an int (shown here)
 		diffMean *= Scalar(50000000000);
@@ -395,14 +392,19 @@ void ofApp::update() {
             }
         }
     }
+}
+
+void setMLColor(float circleOpacity){
     
+
 }
 
 void ofApp::draw() {
-    ofLogVerbose();
+    
+    fbo.begin();
     ofSetColor(0,0,0,10);
     ofRectangle(0,0, ofGetWindowWidth() ,ofGetWindowHeight());
-    fbo.begin();
+    
     ofRectangle(0,0, ofGetWindowWidth() ,ofGetWindowHeight());
     texImg.draw(0,0);
 
@@ -413,6 +415,9 @@ void ofApp::draw() {
         ofSetColor(255,255,255,circleOpacity);
         if (values.size() > 0){
             ofSetColor(targetValues[0] * 255,255,255,circleOpacity);
+            if(values.size() > 1){
+                ofSetColor(255, targetValues[1] * 255,255,circleOpacity);
+            }
             
         }
         ofEllipse(center.x, center.y,5*(velocity.x + velocity.y),(velocity.x + velocity.y)*4);
@@ -437,6 +442,10 @@ void ofApp::draw() {
         ofVec2f velocity = toOf(contourFinder.getVelocity(i));
         if (values.size() > 0){
             ofSetColor(targetValues[0] * 255,255,255,circleOpacity);
+            if(values.size() > 1){
+                ofSetColor(255, targetValues[1] * 255,255,circleOpacity);
+            }
+            
         }
         ofEllipse(center.x, center.y,5*(velocity.x + velocity.y),500);
         ofEllipse(center.x, center.y,(velocity.x + velocity.y),100);

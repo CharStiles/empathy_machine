@@ -100,6 +100,7 @@ public:
     void setupRegressor();
     void addSlider();
     void train();
+    void setMLColor(float circleOpacity);
     
     void setupOSC();
     void sendOSC();
