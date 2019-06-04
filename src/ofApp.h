@@ -20,6 +20,7 @@
 #define SIZE_INPUT_VECTOR 4096
 
 #define RELEASE
+#define colAvgNum 15
 
 class GestureRecognitionPipelineThreaded : public ofThread, public GestureRecognitionPipeline {
 public:
@@ -148,5 +149,9 @@ public:
     ofxOscSender sender;
     string oscDestination, oscAddress;
     int oscPort;
-    
+  
+    //other
+    ofFbo fbo2;
+    ofColor colorOne;
+    float colAvg[colAvgNum] ;
 };

@@ -33,14 +33,19 @@ void ofApp::setup() {
     camHeight = 480;
     red = ofColor(255,0,0,255);
     ofLogVerbose();
+    ofColor colorOne(255,255,255,255);
     
+    for (int i = 0 ; i < colAvgNum; i ++){
+        
+        colAvg[i]=1.0;
+    }
 	//vofSetVerticalSync(true);
     //ofBackground(0);
     ofSetBackgroundAuto(false);
     ofSetVerticalSync(false);
     ofEnableAlphaBlending();
-    circleOpacity = 100;
-    contourScale = 20; //
+    circleOpacity = 255;
+    contourScale = 17; //
     contourPersistance = 30; // 6
     ofSetColor(0,255);
     
@@ -49,6 +54,7 @@ void ofApp::setup() {
     ringTex.allocate(camWidth, camHeight, OF_PIXELS_RGB);
     tex.allocate(camWidth, camHeight, OF_PIXELS_RGB);
     fbo.allocate(camWidth,camHeight,GL_RGBA);
+    fbo2.allocate(camWidth,camHeight,GL_RGBA);
     camImg.allocate(camWidth,camHeight,OF_IMAGE_COLOR);
     
     ringImg.allocate(camWidth, camHeight,OF_IMAGE_COLOR);
@@ -60,14 +66,14 @@ void ofApp::setup() {
     //////////////////////////////////////////////////////// ETHERNET CAMERA STUFF
     
     gstv.allocate(camWidth, camHeight, OF_PIXELS_RGB);
-    gstv.setPipeline("rtspsrc location=rtsp://admin:@192.168.8.192:554/live0.264;stream=0;user=system;pass=system; width=341, height=251,framerate=15/1 gop-size=1 bitrate=200 drop-on-latency=true  latency=1 ! queue2 max-size-buffers=2 ! decodebin ! videoconvert ! videoscale", OF_PIXELS_RGB, true, camWidth, camHeight);
+    gstv.setPipeline("rtspsrc location=rtsp://admin:@192.168.8.192:554/live0.264;stream=0;user=system;pass=system; width=640, height=480,framerate=15/1 gop-size=1 bitrate=200 drop-on-latency=true  latency=1 ! queue2 max-size-buffers=2 ! decodebin ! videoconvert ! videoscale", OF_PIXELS_RGB, true, camWidth, camHeight);
     //TODO: Speed this up
     
     gstv.startPipeline();
     gstv.play();
 
     /// CONTOUR
-    contourFinder.setMinAreaRadius(1);
+    contourFinder.setMinAreaRadius(6);
     contourFinder.setMaxAreaRadius(100);
     contourFinder.setThreshold(contourScale);
     // wait for half a second before forgetting something
@@ -77,7 +83,7 @@ void ofApp::setup() {
     //END CONTOUR
 
     /// CONTOUR
-    contourFinderFull.setMinAreaRadius(1);
+    contourFinderFull.setMinAreaRadius(6);
     contourFinderFull.setMaxAreaRadius(100);
     contourFinderFull.setThreshold(contourScale);
     // wait for half a second before forgetting something
@@ -164,6 +170,8 @@ void ofApp::setup() {
     
     // osc
     setupOSC();
+    
+
 }
 
 //--------------------------------------------------------------
@@ -279,12 +287,12 @@ void ofApp::update() {
     gstv.update();
     if(gstv.isFrameNew()){
         camPix = gstv.getPixels();
+        
         if (ccv.isReady()){
-            
             ccv.update(gstv, ccv.numLayers()-1);
         }
 
-        temp1 =(float)((camHeight)/2);
+        temp1 =(float)((camWidth)/2);
         //faceFinder.update(cam);
 		// take the absolute difference of prev and cam and save it inside diff
 		absdiff(camPix, previous, diff);
@@ -310,8 +318,8 @@ void ofApp::update() {
         }
         for (int  j = 0; j < camHeight; j++){
             for(int i = 0; i < camWidth; i++){
-                temp2 = ofDist((float)i, (float)j,(float)(camWidth)/2, (float)(camHeight)/2);
-                if(temp2 < temp1 && temp2 > (float)((camHeight)/4)){
+                temp2 = ofDist((float)i, (float)j,(float)(camWidth)/2 , (float)(camHeight)/2);
+                if(temp2 < temp1 && temp2 > (float)((camHeight)/4)+50){
                     ii = i- (camWidth/2);
                     jj = j- (camHeight/2);
                     if (ii != 0){ // replacement for atan2!
@@ -344,10 +352,10 @@ void ofApp::update() {
                     //cc = ofColor(cc.r,cc.g,cc.b,30);
                     pixels.setColor(i,j,c.invert());
                 }
-                else if (abs(temp2 - temp1)< 5){ // outside circle
-                    
-                    pixels.setColor(i,j,red);
-                }
+//                else if (temp2 < (float)((camHeight)/4)+50){ // outside circle
+//                    ofColor c = pixels.getColor(i,j);
+//                    pixels.setColor(i,j,c.invert());
+//                }
             }
         }
             
@@ -400,6 +408,29 @@ void setMLColor(float circleOpacity){
 }
 
 void ofApp::draw() {
+    fbo2.begin();
+    
+    if (tPredict){
+        float avg = 0;
+        colAvg[ofGetFrameNum() % colAvgNum] = targetValues[0];
+        for (int i = 0 ; i < colAvgNum; i ++){
+            
+            avg += colAvg[i];
+        }
+        avg = avg/ (float)colAvgNum;
+        
+        colorOne.set(avg * 255,255,avg * 255,circleOpacity);
+        if(values.size() > 1){
+            colorOne.set(colAvgNum* 255, 255,targetValues[1] * 255,circleOpacity);
+        }
+        
+    }
+    
+    //ofColor colorOne(255, 255, 255,2555);
+    ofColor colorTwo(colorOne.r, colorOne.g, colorOne.b,0);
+    
+    ofBackgroundGradient(colorOne, colorTwo, OF_GRADIENT_CIRCULAR);
+    fbo2.end();
     
     fbo.begin();
     ofSetColor(0,0,0,10);
@@ -407,48 +438,39 @@ void ofApp::draw() {
     
     ofRectangle(0,0, ofGetWindowWidth() ,ofGetWindowHeight());
     texImg.draw(0,0);
-
+    
+    ofSetColor(colorOne);
     for(int j = 0; j < contourFinderFull.size(); j++) {
         
         ofPoint center = toOf(contourFinderFull.getCenter(j));
         ofVec2f velocity = toOf(contourFinderFull.getVelocity(j));
-        ofSetColor(255,255,255,circleOpacity);
-        if (values.size() > 0){
-            ofSetColor(targetValues[0] * 255,255,255,circleOpacity);
-            if(values.size() > 1){
-                ofSetColor(255, targetValues[1] * 255,255,circleOpacity);
-            }
-            
-        }
-        ofEllipse(center.x, center.y,5*(velocity.x + velocity.y),(velocity.x + velocity.y)*4);
-        ofEllipse(center.x, center.y,(velocity.x + velocity.y),(velocity.x + velocity.y)*2);
+        
+        int v = (velocity.x + velocity.y);
+        fbo2.draw(center.x - (v*2), center.y - (v*2),5*(velocity.x + velocity.y),(velocity.x + velocity.y)*4);
+        fbo2.draw(center.x- (v*2), center.y- (v*2),(velocity.x + velocity.y),(velocity.x + velocity.y)*2);
         
     }
-//    for(int i = 0; i < faceFinder.size(); i++) {
-//        ofSetColor(255,0,0,255);
-//        ofRectangle object = faceFinder.getObjectSmoothed(i);
-//        ofDrawRectangle(object);
-//    }
+
     fbo.end();
-    if (values.size() > 0){
-        ofSetColor(targetValues[0] * 255,255,255,255);
-    }
-    ofEllipse(camWidth + camWidth/2,camHeight/2,camWidth,camHeight); // rectangle thats the ML valjuer
+    
+    ofSetColor(colorOne);
+    fbo2.draw(camWidth,0,camWidth,camHeight); // rectangle thats the ML valjuer
+    
     ofSetColor(0,10);
     ringTex.draw(0, 0);
 
     for(int i = 0; i < contourFinder.size(); i++) {
         ofPoint center = toOf(contourFinder.getCenter(i));
         ofVec2f velocity = toOf(contourFinder.getVelocity(i));
-        if (values.size() > 0){
-            ofSetColor(targetValues[0] * 255,255,255,circleOpacity);
-            if(values.size() > 1){
-                ofSetColor(255, targetValues[1] * 255,255,circleOpacity);
-            }
-            
-        }
-        ofEllipse(center.x, center.y,5*(velocity.x + velocity.y),500);
-        ofEllipse(center.x, center.y,(velocity.x + velocity.y),100);
+//        if (values.size() > 0){
+//            ofSetColor(targetValues[0] * 255,255,255,circleOpacity);
+//            if(values.size() > 1){
+//                ofSetColor(255, targetValues[1] * 255,255,
+        
+         ofSetColor(colorOne);
+        //ofEllipse(center.x, center.y,5*(velocity.x + velocity.y),500);
+        fbo2.draw(center.x - (velocity.x + velocity.y), center.y - (velocity.x + velocity.y),2*(velocity.x + velocity.y), 2*(velocity.x + velocity.y));
+        fbo2.draw(center.x - 4*(velocity.x + velocity.y), center.y- 4*(velocity.x + velocity.y) - 90,8*(velocity.x + velocity.y), 90);
     }
 
     
@@ -458,6 +480,7 @@ void ofApp::draw() {
     ofSetColor(255);
     contourFinder.draw();
     fbo.draw(0, camHeight/2);
+    //tex.draw(camWidth, camHeight/2);
     camImg.draw(camWidth, camHeight/2);
     //grayImage.draw(10, 320, 400, 300);
     //tex.draw(0,camHeight/2);
@@ -473,20 +496,21 @@ void ofApp::draw() {
     
     gui.draw();
     guiSliders.draw();
-    
+    ofSetColor(0,255);
+    ofDrawBitmapString("(left & right arrows)sensitivity: " + ofToString(contourScale), camWidth + gui.getWidth(), 50);
+    ofDrawBitmapString("(up & down arrows)persistance: " + ofToString(contourPersistance), camWidth + gui.getWidth(), 100);
+    ofDrawBitmapString("(<>) strength: " + ofToString(circleOpacity), camWidth + gui.getWidth(), 150);
 }
 void ofApp::keyPressed  (int key){
     
     switch (key) {
         case OF_KEY_LEFT:
             contourScale -= 1;
-            cout << "\n sensitivity";
-            cout << contourScale;
+ 
             break;
         case OF_KEY_RIGHT:
             contourScale +=1;
-            cout << "\n sensitivity";
-            cout << contourScale;
+
             break;
 
         case OF_KEY_UP:
@@ -507,8 +531,10 @@ void ofApp::keyPressed  (int key){
             break;
     }
     contourFinder.setThreshold(contourScale);
+    contourFinderFull.setThreshold(contourScale);
     // wait for half a second before forgetting something
     contourFinder.getTracker().setPersistence(contourPersistance);// second
+    contourFinderFull.getTracker().setPersistence(contourPersistance);// second
 }
 
 //--------------------------------------------------------------

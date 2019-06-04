@@ -8,7 +8,7 @@ Release*/
 *.app/
 *.pyc
 .svn/
-bin/data/**
+bin/**
 
 #XCode
 *.pbxuser
@@ -16,6 +16,9 @@ bin/data/**
 *.perspectivev3
 *.mode1v3
 *.mode2v3
+*.xcodeproj
+*.xcconfig
+
 #XCode 4
 xcuserdata
 *.xcworkspace
