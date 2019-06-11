@@ -14,7 +14,7 @@ void ofApp::setup() {
     circleOpacity = 100;
     contourScale = 1; //
     contourPersistance = 1; // 6
-    movie.load("G98A1819.mp4");
+    movie.load("simon.mp4");
     movie.play();
     movie.setVolume(0);
     camWidth = movie.getWidth();  // try to grab at this size.
@@ -112,7 +112,7 @@ void ofApp::draw() {
     ofSetColor(255,255);
     texImg.draw(0,0);
     
-    ofSetColor(255,255,255,90);
+    ofSetColor(255,255,255,circleOpacity);
     contourFinder.draw();
 //
 //    for (int j = 0; j < contourFinder.size(); j++) {
