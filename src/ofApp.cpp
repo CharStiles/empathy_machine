@@ -48,11 +48,11 @@ void ofApp::setup() {
     contourScale = 17; //
     contourPersistance = 30; // 6
     ofSetColor(0,255);
-    
+    ofPixelFormat pf = OF_PIXELS_RGB;
     ofRect(0,0,ofGetScreenWidth(),ofGetScreenHeight());
-    ringPixels.allocate(camWidth, camHeight, OF_PIXELS_RGB);
-    ringTex.allocate(camWidth, camHeight, OF_PIXELS_RGB);
-    tex.allocate(camWidth, camHeight, OF_PIXELS_RGB);
+    ringPixels.allocate(camWidth, camHeight, pf);
+    ringTex.allocate(camWidth, camHeight, pf);
+    tex.allocate(camWidth, camHeight, pf);
     fbo.allocate(camWidth,camHeight,GL_RGBA);
     fbo2.allocate(camWidth,camHeight,GL_RGBA);
     camImg.allocate(camWidth,camHeight,OF_IMAGE_COLOR);
@@ -64,9 +64,9 @@ void ofApp::setup() {
    // faceFinder.setPreset(ObjectFinder::Fast);
     
     //////////////////////////////////////////////////////// ETHERNET CAMERA STUFF
-    
-    gstv.allocate(camWidth, camHeight, OF_PIXELS_RGB);
-    gstv.setPipeline("rtspsrc location=rtsp://admin:@192.168.8.192:554/live0.264;stream=0;user=system;pass=system; width=640, height=480,framerate=15/1 gop-size=1 bitrate=200 drop-on-latency=true  latency=1 ! queue2 max-size-buffers=2 ! decodebin ! videoconvert ! videoscale", OF_PIXELS_RGB, true, camWidth, camHeight);
+    gstv.setPixelFormat(pf);
+    gstv.allocate(camWidth, camHeight, pf);
+    gstv.setPipeline("rtspsrc location=rtsp://admin:@192.168.8.192:554/live0.264;stream=0;user=system;pass=system; width=640, height=480,framerate=15/1 gop-size=1 bitrate=20 drop-on-latency=true  latency=0 ! queue2 max-size-buffers=0 ! decodebin ! videoconvert ! videoscale", pf, true, camWidth, camHeight);
     //TODO: Speed this up
     
     gstv.startPipeline();
@@ -170,7 +170,6 @@ void ofApp::setup() {
     
     // osc
     setupOSC();
-    
 
 }
 
@@ -360,7 +359,7 @@ void ofApp::update() {
         }
             
     ringTex.loadData(ringPixels); // distorted diff
-    ringImg.setFromPixels(ringPixels);// TODO init this
+    ringImg.setFromPixels(ringPixels);
     texImg.setFromPixels(diff);
     tex.loadData(pixels); // diff feed
     camImg.setFromPixels(gstv.getPixels());
