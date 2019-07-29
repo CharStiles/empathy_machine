@@ -14,11 +14,11 @@ void ofApp::setup() {
     circleOpacity = 100;
     contourScale = 1; //
     contourPersistance = 1; // 6
-    movie.load("simon.mp4");
+    movie.load("simon2.mp4");
     movie.play();
     movie.setVolume(0);
     camWidth = movie.getWidth();  // try to grab at this size.
-    camHeight = movie.getHeight();
+    camHeight =movie.getHeight();
     
     ringPixels.allocate(camWidth, camHeight, OF_PIXELS_RGB);
     ringTex.allocate(camWidth, camHeight, OF_PIXELS_RGB);
@@ -108,7 +108,8 @@ void ofApp::draw() {
     
     //diff.draw(0,0);
     //ofSetColor(255,255,255,150);
-    ofSetLineWidth(ofNoise(ofGetFrameNum()) * 3);
+    ofTranslate(-(camWidth/6), -(camHeight/6));
+    ofSetLineWidth(ofNoise(ofGetFrameNum()));
     ofSetColor(255,255);
     texImg.draw(0,0);
     
