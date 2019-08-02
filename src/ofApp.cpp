@@ -29,9 +29,14 @@ void GestureRecognitionPipelineThreaded::threadedFunction() {
 //-------
 
 void ofApp::setup() {
-    camWidth = 640;  // try to grab at this size.
-    camHeight = 480;
+//        1280 x 960
+    camWidth = 256;  // try to grab at this size.
+    camHeight = 256;
+//    camWidth = 352;  // try to grab at this size.
+//    camHeight = 288;
+    
     red = ofColor(255,0,0,255);
+    ofSetFrameRate(10);
     ofLogVerbose();
     ofColor colorOne(255,255,255,255);
     
@@ -39,17 +44,19 @@ void ofApp::setup() {
         
         colAvg[i]=1.0;
     }
+    
 	//vofSetVerticalSync(true);
     //ofBackground(0);
     ofSetBackgroundAuto(false);
     ofSetVerticalSync(false);
     ofEnableAlphaBlending();
     circleOpacity = 255;
-    contourScale = 17; //
+    contourScale = 17;
     contourPersistance = 30; // 6
     ofSetColor(0,255);
-    ofPixelFormat pf = OF_PIXELS_RGB;
+    ofPixelFormat pf = OF_PIXELS_MONO;
     ofRect(0,0,ofGetScreenWidth(),ofGetScreenHeight());
+    
     ringPixels.allocate(camWidth, camHeight, pf);
     ringTex.allocate(camWidth, camHeight, pf);
     tex.allocate(camWidth, camHeight, pf);
@@ -66,7 +73,12 @@ void ofApp::setup() {
     //////////////////////////////////////////////////////// ETHERNET CAMERA STUFF
     gstv.setPixelFormat(pf);
     gstv.allocate(camWidth, camHeight, pf);
-    gstv.setPipeline("rtspsrc location=rtsp://admin:@192.168.8.192:554/live0.264;stream=0;user=system;pass=system; width=640, height=480,framerate=15/1 gop-size=1 bitrate=20 drop-on-latency=true  latency=0 ! queue2 max-size-buffers=0 ! decodebin ! videoconvert ! videoscale", pf, true, camWidth, camHeight);
+    
+//  gstv.setPipeline("rtspsrc location=rtsp://admin:@192.168.8.102:5544/live0.264;stream=0;user=system;pass=system; width=352,height=288,framerate=15/1 gop-size=1 bitrate=20 drop-on-latency=true latency=0 ! queue2 max-size-buffers=0 ! decodebin ! videoconvert ! videoscale", pf, true, camWidth, camHeight);
+//
+    gstv.setPipeline("rtspsrc location=rtsp://admin:admin@192.168.8.102:554/live0.264; drop-on-latency=true latency=0 ! decodebin ! videoconvert ! videoscale", pf, true, camWidth, camHeight);
+
+    //        gstv.setPipeline("rtspsrc location=rtsp://admin:@192.168.8.102:554/live0.264;stream=0;user=system;pass=system; width=640, height=480,framerate=15/1 gop-size=1 bitrate=20 drop-on-latency=true  latency=0 ! queue2 max-size-buffers=0 ! decodebin ! videoconvert ! videoscale", pf, true, camWidth, camHeight);
     //TODO: Speed this up
     
     gstv.startPipeline();
@@ -81,7 +93,7 @@ void ofApp::setup() {
     // an object can move up to 32 pixels per frame
     contourFinder.getTracker().setMaximumDistance(32);
     //END CONTOUR
-
+    
     /// CONTOUR
     contourFinderFull.setMinAreaRadius(6);
     contourFinderFull.setMaxAreaRadius(100);
@@ -91,15 +103,15 @@ void ofApp::setup() {
     // an object can move up to 32 pixels per frame
     contourFinderFull.getTracker().setMaximumDistance(32);
     //END CONTOUR
-
-//    cam.setDeviceID(dID);
-//    cam.initGrabber(camWidth, camHeight);
-
+    
+    //    cam.setDeviceID(dID);
+    //    cam.initGrabber(camWidth, camHeight);
+    
     camPix.allocate(camWidth, camHeight, 3);
-	// imitate() will set up previous and diff
-	// so they have the same size and type as cam
-	imitate(previous, camPix);
-	imitate(diff, camPix);
+    // imitate() will set up previous and diff
+    // so they have the same size and type as cam
+    imitate(previous, camPix);
+    imitate(diff, camPix);
     
     // START SYPHION
     mainOutputSyphonServer.setName("Screen Output");
@@ -111,7 +123,7 @@ void ofApp::setup() {
     //END SYPHON
     
     //////////////////Machine learning shiiiit
- 
+    
 #ifdef RELEASE
     string ccvPath = ofToDataPath("image-net-2012.sqlite3");
 #else
@@ -170,7 +182,7 @@ void ofApp::setup() {
     
     // osc
     setupOSC();
-
+    
 }
 
 //--------------------------------------------------------------
@@ -480,7 +492,10 @@ void ofApp::draw() {
     contourFinder.draw();
     fbo.draw(0, camHeight/2);
     //tex.draw(camWidth, camHeight/2);
-    camImg.draw(camWidth, camHeight/2);
+    
+    //camImg.draw(camWidth, camHeight/2);
+    camImg.draw(0,0);
+    
     //grayImage.draw(10, 320, 400, 300);
     //tex.draw(0,camHeight/2);
     mClient.draw(50, 50);

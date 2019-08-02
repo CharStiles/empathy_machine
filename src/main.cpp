@@ -3,7 +3,7 @@
 int main() {
     ofGLWindowSettings settings;
     settings.setGLVersion(3,3);
-    settings.windowMode = OF_FULLSCREEN;
+    settings.windowMode = OF_WINDOW;
     ofCreateWindow(settings);
     
     // this kicks off the running of my app
