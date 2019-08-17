@@ -2,6 +2,7 @@
 
 int main() {
     ofGLWindowSettings settings;
+    //settings.setSize(1650, 1080);
     settings.setGLVersion(3,3);
     settings.windowMode = OF_WINDOW;
     ofCreateWindow(settings);

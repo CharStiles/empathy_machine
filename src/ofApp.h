@@ -53,6 +53,7 @@ public:
     ofTexture tex;
     ofImage texImg;
     ofFbo fbo;
+    ofFbo fbo3;
     
     int ii;
     int jj;
@@ -152,6 +153,7 @@ public:
   
     //other
     ofFbo fbo2;
+    ofFbo fbo4;
     ofColor colorOne;
     float colAvg[colAvgNum] ;
 };

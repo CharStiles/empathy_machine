@@ -4,7 +4,9 @@ using namespace ofxCv;
 using namespace cv;
 
 /////machine learning shit
-
+float speedCircleX;
+bool speedSensitivity;
+float speedAmt;
 //--------------------------------------------------------------
 void GestureRecognitionPipelineThreaded::startTraining(RegressionData *trainingData) {
     this->trainingData = trainingData;
@@ -29,16 +31,24 @@ void GestureRecognitionPipelineThreaded::threadedFunction() {
 //-------
 
 void ofApp::setup() {
-//        1280 x 960
-    camWidth = 256;  // try to grab at this size.
-    camHeight = 256;
-//    camWidth = 352;  // try to grab at this size.
-//    camHeight = 288;
+    ofSetColor(0,0,0,255);
+    ofDrawRectangle (0,0,camWidth, ofGetScreenHeight());
     
+    speedSensitivity = false;
+////        1280 x 960
+//    camWidth = 704;  // try to grab at this size.
+//    camHeight = 576;
+    camWidth = 640;  // try to grab at this size.
+    camHeight = 480;
+//    camWidth = 352;  // try to grab at this size.
+ //   camHeight = 288;
+    
+    speedCircleX = 0;
     red = ofColor(255,0,0,255);
-    ofSetFrameRate(10);
+    ofSetFrameRate(60);
     ofLogVerbose();
-    ofColor colorOne(255,255,255,255);
+    ofColor colorOne(255,255,255,circleOpacity);
+    speedAmt = 0.3;
     
     for (int i = 0 ; i < colAvgNum; i ++){
         
@@ -50,20 +60,22 @@ void ofApp::setup() {
     ofSetBackgroundAuto(false);
     ofSetVerticalSync(false);
     ofEnableAlphaBlending();
-    circleOpacity = 255;
+    circleOpacity = 50;
     contourScale = 17;
     contourPersistance = 30; // 6
     ofSetColor(0,255);
-    ofPixelFormat pf = OF_PIXELS_MONO;
+    ofPixelFormat pf = OF_PIXELS_RGB;
     ofRect(0,0,ofGetScreenWidth(),ofGetScreenHeight());
     
     ringPixels.allocate(camWidth, camHeight, pf);
     ringTex.allocate(camWidth, camHeight, pf);
     tex.allocate(camWidth, camHeight, pf);
-    fbo.allocate(camWidth,camHeight,GL_RGBA);
-    fbo2.allocate(camWidth,camHeight,GL_RGBA);
-    camImg.allocate(camWidth,camHeight,OF_IMAGE_COLOR);
+    fbo.allocate(camWidth,camHeight,GL_RGBA); //the full look for the middle
+    fbo2.allocate(camWidth,camHeight,GL_RGBA); //
+    fbo3.allocate(camWidth,camHeight,GL_RGBA); //swelly lookin
+    fbo4.allocate(camWidth,camHeight,GL_RGBA); //glitchy lookin
     
+    camImg.allocate(camWidth,camHeight,OF_IMAGE_COLOR);
     ringImg.allocate(camWidth, camHeight,OF_IMAGE_COLOR);
     texImg.allocate(camWidth, camHeight,OF_IMAGE_COLOR);
 
@@ -76,7 +88,18 @@ void ofApp::setup() {
     
 //  gstv.setPipeline("rtspsrc location=rtsp://admin:@192.168.8.102:5544/live0.264;stream=0;user=system;pass=system; width=352,height=288,framerate=15/1 gop-size=1 bitrate=20 drop-on-latency=true latency=0 ! queue2 max-size-buffers=0 ! decodebin ! videoconvert ! videoscale", pf, true, camWidth, camHeight);
 //
-    gstv.setPipeline("rtspsrc location=rtsp://admin:admin@192.168.8.102:554/live0.264; drop-on-latency=true latency=0 ! decodebin ! videoconvert ! videoscale", pf, true, camWidth, camHeight);
+    
+    
+    
+    
+    
+    gstv.setPipeline("rtspsrc location=rtsp://admin:admin@192.168.8.102:554/live2.264; framerate=90/1 gop-size=10 bitrate=2 drop-on-latency=true latency=0 ! queue2 max-size-buffers=0 ! decodebin ! videoconvert ! videoscale", pf, true, camWidth,camHeight);
+    
+    
+    
+    
+    
+   // gstv.setPipeline("rtspsrc location=rtsp://admin:admin@192.168.8.102:554/live2.264; latency=0 ! rtpjpegdepay ! jpegdec ! queue ! decodebin ! videoconvert", OF_PIXELS_RGB, true, camWidth,camHeight);
 
     //        gstv.setPipeline("rtspsrc location=rtsp://admin:@192.168.8.102:554/live0.264;stream=0;user=system;pass=system; width=640, height=480,framerate=15/1 gop-size=1 bitrate=20 drop-on-latency=true  latency=0 ! queue2 max-size-buffers=0 ! decodebin ! videoconvert ! videoscale", pf, true, camWidth, camHeight);
     //TODO: Speed this up
@@ -121,7 +144,7 @@ void ofApp::setup() {
     //using Syphon app Simple Server, found at http://syphon.v002.info/
     mClient.set("","Simple Server");
     //END SYPHON
-    
+
     //////////////////Machine learning shiiiit
     
 #ifdef RELEASE
@@ -176,10 +199,9 @@ void ofApp::setup() {
     
     guiSliders.setup();
     guiSliders.setPosition(camWidth,gui.getHeight()+25);
-    guiSliders.setName("Sliders");
+    guiSliders.setName("Sliders 0=high 1=low");
     guiSliders.add(bAddSlider.setup("Add Slider"));
     addSlider();
-    
     // osc
     setupOSC();
     
@@ -327,8 +349,10 @@ void ofApp::update() {
         for(int i = 0; i < contourFinder.size(); i++) {
             ofPoint center = toOf(contourFinder.getCenter(i));
         }
+        
         for (int  j = 0; j < camHeight; j++){
             for(int i = 0; i < camWidth; i++){
+                
                 temp2 = ofDist((float)i, (float)j,(float)(camWidth)/2 , (float)(camHeight)/2);
                 if(temp2 < temp1 && temp2 > (float)((camHeight)/4)+50){
                     ii = i- (camWidth/2);
@@ -374,7 +398,7 @@ void ofApp::update() {
     ringImg.setFromPixels(ringPixels);
     texImg.setFromPixels(diff);
     tex.loadData(pixels); // diff feed
-    camImg.setFromPixels(gstv.getPixels());
+    camImg.setFromPixels(camPix);
     contourFinder.findContours(ringImg);
     contourFinderFull.findContours(texImg);
 	}
@@ -390,7 +414,7 @@ void ofApp::update() {
         for (int i=0; i<featureEncoding.size(); i++) {
             inputVector[i] =  featureEncoding[i];
         }
-        
+
         if( tRecord ) {
             VectorFloat targetVector(values.size());
             for (int p=0; p<values.size(); p++) {
@@ -430,11 +454,14 @@ void ofApp::draw() {
         }
         avg = avg/ (float)colAvgNum;
         
-        colorOne.set(avg * 255,255,avg * 255,circleOpacity);
+        colorOne.set(avg * 255, avg *255, avg * 255, circleOpacity);
         if(values.size() > 1){
             colorOne.set(colAvgNum* 255, 255,targetValues[1] * 255,circleOpacity);
         }
         
+    }
+    else{
+        colorOne.set(255,255,255,255);
     }
     
     //ofColor colorOne(255, 255, 255,2555);
@@ -444,6 +471,7 @@ void ofApp::draw() {
     fbo2.end();
     
     fbo.begin();
+
     ofSetColor(0,0,0,10);
     ofRectangle(0,0, ofGetWindowWidth() ,ofGetWindowHeight());
     
@@ -451,28 +479,47 @@ void ofApp::draw() {
     texImg.draw(0,0);
     
     ofSetColor(colorOne);
+    
+    int inInnerCircle = 0;
     for(int j = 0; j < contourFinderFull.size(); j++) {
-        
         ofPoint center = toOf(contourFinderFull.getCenter(j));
         ofVec2f velocity = toOf(contourFinderFull.getVelocity(j));
         
-        int v = (velocity.x + velocity.y);
-        fbo2.draw(center.x - (v*2), center.y - (v*2),5*(velocity.x + velocity.y),(velocity.x + velocity.y)*4);
-        fbo2.draw(center.x- (v*2), center.y- (v*2),(velocity.x + velocity.y),(velocity.x + velocity.y)*2);
-        
+        int v = 2;//(velocity.x + velocity.y)/2.0 ;
+
+        fbo2.draw(center.x - (v*2), center.y - (v*2),4*(velocity.x + velocity.y),(velocity.x + velocity.y)*4);
+        fbo2.draw(center.x- (v), center.y- (v),(velocity.x + velocity.y)*2,(velocity.x + velocity.y)*2);
+        if (ofDist(center.x, center.y, camWidth/2.0, camHeight/2.0) < camHeight/5.){
+            speedCircleX += (abs(velocity.x) + abs(velocity.y)) * (speedAmt/2.0);
+            inInnerCircle++;
+        }
+       
     }
 
     fbo.end();
     
     ofSetColor(colorOne);
     fbo2.draw(camWidth,0,camWidth,camHeight); // rectangle thats the ML valjuer
-    
-    ofSetColor(0,10);
-    ringTex.draw(0, 0);
 
+    
+    fbo3.begin();
+    ofSetColor(0,0,0,10);
+    ofRectangle(0,0, ofGetWindowWidth() ,ofGetWindowHeight());
+    
+    ofRectangle(0,0, ofGetWindowWidth() ,ofGetWindowHeight());
+    texImg.draw(0,0);
+    
+    ofSetColor(colorOne);
+    
     for(int i = 0; i < contourFinder.size(); i++) {
         ofPoint center = toOf(contourFinder.getCenter(i));
         ofVec2f velocity = toOf(contourFinder.getVelocity(i));
+        if (inInnerCircle < contourFinderFull.size()/2 ){
+            
+            speedCircleX += ((velocity.x) + (velocity.y)) * speedAmt;
+        }
+        
+        
 //        if (values.size() > 0){
 //            ofSetColor(targetValues[0] * 255,255,255,circleOpacity);
 //            if(values.size() > 1){
@@ -480,40 +527,111 @@ void ofApp::draw() {
         
          ofSetColor(colorOne);
         //ofEllipse(center.x, center.y,5*(velocity.x + velocity.y),500);
+        cv::Rect r = contourFinder.getBoundingRect(i);
+        // ofSetColor(c);
+        ofFill();
+        // r.draw();
+        // ofNoFill();
+        
         fbo2.draw(center.x - (velocity.x + velocity.y), center.y - (velocity.x + velocity.y),2*(velocity.x + velocity.y), 2*(velocity.x + velocity.y));
         fbo2.draw(center.x - 4*(velocity.x + velocity.y), center.y- 4*(velocity.x + velocity.y) - 90,8*(velocity.x + velocity.y), 90);
+        
     }
-
+    fbo3.end();
     
-    ofSetColor(255,255,255,10);
-    ringImg.draw(0,0);
+    
+    fbo4.begin();
+    ofSetColor(0,0,0,40);
+    ofRectangle(0,0, ofGetWindowWidth() ,ofGetWindowHeight());
+    
+    ofRectangle(0,0, ofGetWindowWidth() ,ofGetWindowHeight());
+    texImg.draw(0,0);
+    
+    ofSetColor(colorOne);
+    
+    for(int i = 0; i < contourFinder.size(); i++) {
+        ofPoint center = toOf(contourFinder.getCenter(i));
+        ofVec2f velocity = toOf(contourFinder.getVelocity(i));
 
-    ofSetColor(255);
-    contourFinder.draw();
-    fbo.draw(0, camHeight/2);
+        ofSetColor(255,255,255,180);
+        
+        ofEllipse(center.x, 100,5*(velocity.x + velocity.y),50);
+         ofEllipse(center.x+5, 100,(velocity.x + velocity.y),75);
+        ofEllipse(center.x, 100,(velocity.x + velocity.y),100);
+    }
+    fbo4.end();
+    
+//    speedCircleX *= speedCircleX;
+//    speedCircleX/2;
+//
+    if (speedCircleX < 0 ){
+        speedCircleX = camWidth;
+    }
+    if (speedCircleX > camWidth ){
+        speedCircleX = 0;
+    }
+    //ofSetColor(0,100);
+   // ofRect(0, 0, camWidth, camHeight/4);
+    ofSetColor(255,255,255,20);
+    
+    ringImg.draw(0, 0, camWidth, camHeight);
+    ofSetColor(255,255,255,50);
+    fbo3.draw(0,0);
+    //contourFinder.draw();
+    ofSetColor(255,255,255,255);
+    fbo4.draw(0,camHeight/4);
+    
+    //ofSetColor(255,255,255,50);
+   // ringImg.draw(0, 0, camWidth, camHeight);
+    
+   // ringImg.draw(0, camHeight/4, camWidth, camHeight/4);
+    
+    fbo.getTexture().drawSubsection(0,camHeight/2,camWidth* 0.75, camHeight*0.75,camWidth* 0.25, camHeight*0.25);
+    //fbo.draw(0, camHeight/2);fhreughdfjkghakdf
+//    ofTranslate(0,camHeight/2);
+//    contourFinderFull.draw();
+//    ofTranslate(0,-camHeight/2);
+
     //tex.draw(camWidth, camHeight/2);
     
-    //camImg.draw(camWidth, camHeight/2);
+    //camImg.draw(0,0);
+    ofSetColor(0,10);
+    ofRect(0, ofGetWindowHeight()-500, camWidth, 500);
+
+    ofSetColor(255,255);
+    //speed sensitivity
+    float f = (fmod(speedCircleX, camWidth));
+    ofDrawEllipse( f, ofGetWindowHeight() - 10, 20, 100);
+
+    ofTranslate(camWidth*0.8, camHeight/2);
+    ofScale(0.75,0.75);
     camImg.draw(0,0);
-    
-    //grayImage.draw(10, 320, 400, 300);
-    //tex.draw(0,camHeight/2);
+    ofNoFill();
+    ofDrawEllipse(camWidth/2, camHeight/2, (camHeight/5) * 2, (camHeight/5) *2);
+    ofFill();
+    ofTranslate(- camWidth*0.8, - camHeight/2);
+    ofScale(1.333,1.333);
+
+camImg.draw(0,0);
     mClient.draw(50, 50);
     
     mainOutputSyphonServer.publishScreen();
     
     
-    /////////WEKINATOR SHTUFF
-    //cam.draw(270, 10);
-    ofDrawBitmapStringHighlight( "Num Samples: " + ofToString( trainingData.getNumSamples() ), camWidth, gui.getHeight()+10 );
-    ofDrawBitmapStringHighlight( infoText, camWidth,gui.getHeight() + 50 );
-    
-    gui.draw();
-    guiSliders.draw();
-    ofSetColor(0,255);
-    ofDrawBitmapString("(left & right arrows)sensitivity: " + ofToString(contourScale), camWidth + gui.getWidth(), 50);
-    ofDrawBitmapString("(up & down arrows)persistance: " + ofToString(contourPersistance), camWidth + gui.getWidth(), 100);
-    ofDrawBitmapString("(<>) strength: " + ofToString(circleOpacity), camWidth + gui.getWidth(), 150);
+//    /////////WEKINATOR SHTUFF
+//    //cam.draw(270, 10);
+//    ofDrawBitmapStringHighlight( "Num Samples: " + ofToString( trainingData.getNumSamples() ), camWidth, gui.getHeight()+10 );
+//    ofDrawBitmapStringHighlight( infoText, camWidth,gui.getHeight() + 50 );
+//
+//    gui.draw();
+//    guiSliders.draw();
+    ofSetColor(100,255);
+    ofDrawBitmapString("(left & right arrows) L sensitivity: " + ofToString(contourScale), camWidth , 50);
+//    ofDrawBitmapString("(up & down arrows)persistance: " + ofToString(contourPersistance), camWidth + gui.getWidth(), 75);
+    ofDrawBitmapString("(<>) L strength: " + ofToString(circleOpacity), camWidth , 75);
+    ofDrawBitmapString("(nm) S sensitivity: " + ofToString(speedAmt), camWidth , 100);
+    ofDrawBitmapString("L: location, S: speed",camWidth , 125);
+
 }
 void ofApp::keyPressed  (int key){
     
@@ -542,6 +660,15 @@ void ofApp::keyPressed  (int key){
             break;
         case '.':
             circleOpacity +=5;
+            break;
+        case 'n':
+            speedAmt -= 0.2;
+            break;
+        case 'm':
+            speedAmt +=0.2;
+            break;
+        case 's' || 'S':
+            speedSensitivity = !speedSensitivity;
             break;
     }
     contourFinder.setThreshold(contourScale);
